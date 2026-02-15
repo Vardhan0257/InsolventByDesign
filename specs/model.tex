@@ -10,6 +10,19 @@
 \section{Introduction}
 
 \section{Model}
+\subsection{Variables}
+
+We define the following variables:
+
+\begin{itemize}
+\item $V$ : Total value locked (TVL) secured by the bridge.
+\item $\tau$ : Minimum duration for which a safety-critical transaction must be censored.
+\item $b(t)$ : Minimum per-slot bribe required to exclude a transaction at time $t$.
+\item $C_c$ : Total censorship cost, defined as $C_c = \sum_{t=1}^{\tau} b(t)$.
+\item $p(V)$ : Probability that censorship leads to successful exploitation.
+\item $P(V)$ : Expected attacker profit, defined as $P(V) = p(V)\cdot V - C_c$.
+\end{itemize}
+
 
 \section{Assumptions}
 
