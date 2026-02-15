@@ -6,6 +6,11 @@ __pycache__/
 .env
 .venv/
 
+# Go build artifacts
+*.exe
+*.test
+*.out
+
 # Data
 data/relay_raw/*.json
 
