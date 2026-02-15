@@ -1,20 +1,27 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"os"
 
-	"insolventbydesign/internal/model"
+	"insolventbydesign/internal/relay"
 )
 
 func main() {
-	bribes := []model.SlotBribe{
-		{Slot: 1, Cost: 1.5},
-		{Slot: 2, Cost: 2.0},
-		{Slot: 3, Cost: 2.5},
+	outDir := "data/relay_raw"
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		log.Fatal(err)
 	}
 
-	tau := uint64(2)
-	cost := model.CensorshipCost(bribes, tau)
+	relays := []string{
+		"https://boost-relay.flashbots.net",
+		"https://relay.ultrasound.money",
+	}
 
-	fmt.Printf("Censorship cost for tau=%d slots: %.2f\n", tau, cost)
+	for _, url := range relays {
+		log.Printf("Fetching from %s\n", url)
+		if err := relay.FetchAndStore(url, outDir); err != nil {
+			log.Println("error:", err)
+		}
+	}
 }
