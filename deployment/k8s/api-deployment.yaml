@@ -1,0 +1,172 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: censorship-api
+  namespace: censorship-system
+  labels:
+    app: censorship-api
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: censorship-api
+  template:
+    metadata:
+      labels:
+        app: censorship-api
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: censorship-api
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: api
+        image: gcr.io/your-project/censorship-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: censorship-config
+              key: db_host
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: censorship-config
+              key: db_port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: censorship-secrets
+              key: db_user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: censorship-secrets
+              key: db_password
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: censorship-config
+              key: db_name
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: censorship-api
+  namespace: censorship-system
+  labels:
+    app: censorship-api
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: censorship-api
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: censorship-api-hpa
+  namespace: censorship-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: censorship-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: censorship-api-pdb
+  namespace: censorship-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: censorship-api
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: censorship-config
+  namespace: censorship-system
+data:
+  db_host: "timescaledb-service"
+  db_port: "5432"
+  db_name: "censorship_db"
+  api_rate_limit: "100"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: censorship-secrets
+  namespace: censorship-system
+type: Opaque
+stringData:
+  db_user: "postgres"
+  db_password: "CHANGE_ME_IN_PRODUCTION"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: censorship-api
+  namespace: censorship-system
