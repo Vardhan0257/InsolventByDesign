@@ -1,7 +1,7 @@
 \documentclass{article}
 
 \title{InsolventByDesign}
-\author{ }
+\author{}
 \date{}
 
 \begin{document}
@@ -9,7 +9,14 @@
 
 \section{Introduction}
 
+Cross-chain bridges secure increasing amounts of value while relying on asynchronous consensus and delayed finality. 
+Recent auction-based block production mechanisms, such as proposer-builder separation (PBS), transform transaction inclusion into a market-driven process.
+This work studies the economic implications of such mechanisms on bridge safety, focusing on the cost of temporarily censoring safety-critical transactions.
+
+Rather than identifying implementation bugs, we analyze whether there exist economic conditions under which censorship-based exploitation becomes rational for an adversary.
+
 \section{Model}
+
 \subsection{Variables}
 
 We define the following variables:
@@ -19,15 +26,65 @@ We define the following variables:
 \item $\tau$ : Minimum duration for which a safety-critical transaction must be censored.
 \item $b(t)$ : Minimum per-slot bribe required to exclude a transaction at time $t$.
 \item $C_c$ : Total censorship cost, defined as $C_c = \sum_{t=1}^{\tau} b(t)$.
-\item $p(V)$ : Probability that censorship leads to successful exploitation.
+\item $p(V)$ : Probability that censorship results in successful exploitation.
 \item $P(V)$ : Expected attacker profit, defined as $P(V) = p(V)\cdot V - C_c$.
 \end{itemize}
 
+\subsection{Attacker Rationality}
+
+We assume an economically rational adversary who initiates an attack if and only if the expected profit is positive.
+Formally, an attack is rational when:
+
+\[
+P(V) > 0
+\]
+
+Equivalently,
+
+\[
+p(V)\cdot V > C_c
+\]
+
+This inequality defines the fundamental condition under which censorship-based exploitation is economically viable.
 
 \section{Assumptions}
 
+We make the following assumptions throughout the model:
+
+\begin{itemize}
+\item Block production is governed by an auction-based mechanism where transaction inclusion is determined by bids.
+\item Censorship of a specific transaction requires the attacker to outbid competing transactions for $\tau$ consecutive slots.
+\item Builders and proposers are economically rational but not necessarily altruistic.
+\item The bridge relies on timely inclusion of safety-critical transactions to prevent exploitation.
+\item The attacker requires only temporary censorship sufficient to complete exploitation, not permanent network control.
+\item The bridge behavior is fixed over the duration of the attack window.
+\end{itemize}
+
 \section{Main Result}
 
+\textbf{Proposition.}
+If there exists a value $V^{*}$ such that:
+
+\[
+p(V^{*}) \cdot V^{*} > C_c
+\]
+
+then censorship-based exploitation is economically rational for an adversary securing value $V^{*}$.
+
+\medskip
+
+This result implies that for fixed censorship cost $C_c$ and non-decreasing $p(V)$, there exists a threshold beyond which bridge security becomes economically unstable under the given assumptions.
+
 \section{Discussion}
+
+The model does not claim inevitability under all protocol designs.
+Instead, it establishes a sufficient economic condition under which censorship-based exploitation becomes rational.
+
+Future work includes:
+\begin{itemize}
+\item Empirical measurement of $b(t)$ using PBS relay data.
+\item Analysis of how builder concentration impacts $C_c$.
+\item Extension of the model to adaptive bridge mechanisms and inclusion-list constraints.
+\end{itemize}
 
 \end{document}
